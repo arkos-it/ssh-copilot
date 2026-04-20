@@ -14,7 +14,8 @@
     "dev": "tsx src/cli.ts",
     "build": "tsup",
     "start": "node dist/cli.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepare": "npm run build"
   },
   "engines": {
     "node": ">=18.0.0"
