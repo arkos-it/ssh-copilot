@@ -1,8 +1,11 @@
 {
   "name": "ssh-copilot",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.0",
   "description": "SSH copilot - terminal compartida entre humano y agente IA",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "ssh-copilot": "./dist/cli.js"
   },
