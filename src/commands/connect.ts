@@ -70,16 +70,19 @@ export async function connectAction(
   if (wsClient) {
     const client = wsClient;
 
+    const executeCommand = (cmd: string) => {
+      agent.addCommand(cmd);
+      session.writeToTerminal(cmd + "\r");
+    };
+
     client.onRunCommand = async (cmd, requestId) => {
       try {
-        // YOLO: ejecutar directo
         if (modeManager.currentMode === AgentMode.YOLO) {
-          session.writeToTerminal(cmd + "\r");
+          executeCommand(cmd);
           client.sendCommandResult(requestId, "sent");
           return;
         }
 
-        // READONLY: rechazar
         if (modeManager.currentMode === AgentMode.READONLY) {
           client.sendCommandResult(
             requestId,
@@ -89,17 +92,13 @@ export async function connectAction(
           return;
         }
 
-        // SUGGEST: pedir aprobación
+        // SUGGEST: respondemos al agente de inmediato con "pending_approval".
+        // El agente sigue con su vida y puede avisar al humano que revise
+        // su terminal. Esperamos la decisión en paralelo sin bloquear.
+        client.sendCommandResult(requestId, "pending_approval");
         const approved = await modeManager.requestApproval(cmd);
         if (approved) {
-          session.writeToTerminal(cmd + "\r");
-          client.sendCommandResult(requestId, "sent");
-        } else {
-          client.sendCommandResult(
-            requestId,
-            "rejected",
-            "Command rejected by user"
-          );
+          executeCommand(cmd);
         }
       } catch (err) {
         client.sendCommandResult(requestId, "error", (err as Error).message);

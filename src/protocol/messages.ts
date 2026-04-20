@@ -25,7 +25,7 @@ export interface CommandResultMessage {
   type: "command_result";
   sessionId: string;
   requestId: string;
-  status: "sent" | "error" | "rejected";
+  status: "sent" | "pending_approval" | "error" | "rejected";
   error?: string;
 }
 

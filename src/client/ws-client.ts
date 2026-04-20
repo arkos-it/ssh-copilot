@@ -95,7 +95,7 @@ export class WsClient {
 
   sendCommandResult(
     requestId: string,
-    status: "sent" | "error" | "rejected",
+    status: "sent" | "pending_approval" | "error" | "rejected",
     error?: string
   ): void {
     this.send({

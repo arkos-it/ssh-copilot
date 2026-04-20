@@ -1,8 +1,6 @@
 import * as pty from "node-pty";
 import { resolve } from "node:path";
-import { appendFileSync, existsSync, mkdirSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
+import { existsSync } from "node:fs";
 import { TerminalManager } from "./terminal.js";
 import type { IAgent } from "./agent/types.js";
 import type { CommandQueue } from "./agent/command-queue.js";
@@ -106,66 +104,25 @@ export class SshSession {
         }
       });
 
-      // Logging temporal de stdin para diagnosticar aprobación en Windows.
-      const stdinLog = this.options.debug
-        ? (() => {
-            const dir = join(homedir(), ".ssh-copilot");
-            try {
-              if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-            } catch {}
-            const file = join(dir, "stdin-debug.log");
-            appendFileSync(
-              file,
-              `\n---\n${new Date().toISOString()} session start\n`
-            );
-            return (line: string) => {
-              try {
-                appendFileSync(file, `${new Date().toISOString()} ${line}\n`);
-              } catch {}
-            };
-          })()
-        : null;
-
       // Usuario input → PTY
       const onStdinData = (data: Buffer) => {
         if (!this.ptyProcess) return;
         const str = data.toString();
 
-        if (stdinLog) {
-          const hex = Array.from(data)
-            .map((b) => b.toString(16).padStart(2, "0"))
-            .join(" ");
-          const pending = this.options.modeManager?.hasPendingApproval()
-            ? "yes"
-            : "no";
-          stdinLog(
-            `stdin bytes=[${hex}] str=${JSON.stringify(str)} pending=${pending}`
-          );
-        }
-
-        // Decodificamos la tecla real (maneja win32-input-mode, CSI u y raw).
         const decodedKey = decodeTypedChar(str);
-        if (decodedKey !== null && decodedKey !== str) {
-          stdinLog?.(`-> decoded key=${JSON.stringify(decodedKey)}`);
-        }
         const effectiveKey = decodedKey ?? str;
 
         if (effectiveKey === "\x0F" && this.options.modeManager) {
-          stdinLog?.("-> ctrl+o, cycling mode");
           this.options.modeManager.cycleMode();
           return;
         }
 
         if (this.options.modeManager?.hasPendingApproval()) {
-          const handled =
-            this.options.modeManager.handleApprovalInput(effectiveKey);
-          stdinLog?.(`-> handleApprovalInput(${JSON.stringify(effectiveKey)}) returned ${handled}`);
-          if (handled) {
+          if (this.options.modeManager.handleApprovalInput(effectiveKey)) {
             return;
           }
         }
 
-        stdinLog?.("-> forwarded to pty");
         this.ptyProcess.write(str);
 
         // Detectar comandos (cuando el usuario presiona Enter)

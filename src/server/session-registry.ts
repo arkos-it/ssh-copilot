@@ -68,12 +68,13 @@ export class SessionRegistry {
     }
 
     const requestId = crypto.randomUUID();
+    const timeoutMs = 10000;
 
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(requestId);
-        reject(new Error("Command timeout (10s)"));
-      }, 10000);
+        reject(new Error(`Command timeout (${timeoutMs / 1000}s waiting for client ack)`));
+      }, timeoutMs);
 
       this.pendingRequests.set(requestId, { resolve, reject, timeout });
 

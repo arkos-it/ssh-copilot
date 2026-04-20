@@ -144,7 +144,7 @@ export function createMcpServer(registry: SessionRegistry): McpServer {
 
   mcp.tool(
     "run_command",
-    "Ejecuta un comando en una sesión SSH remota",
+    "Ejecuta un comando en una sesión SSH remota. Devuelve status: 'sent' (YOLO, ya se ejecutó), 'pending_approval' (SUGGEST, hay que avisarle al humano que revise su terminal y apruebe con y/n), 'rejected' (READONLY o usuario rechazó), 'error' (otros). El output nunca viene en la respuesta — usar read_terminal con last_commands para leerlo una vez que el comando haya corrido.",
     {
       session_id: z.string().describe("ID de la sesión SSH"),
       command: z.string().describe("Comando a ejecutar"),

@@ -74,9 +74,9 @@ export class WsServer {
               break;
 
             case "command_result":
-              if (msg.status === "sent") {
+              if (msg.status === "sent" || msg.status === "pending_approval") {
                 this.registry.resolveRequest(msg.requestId, {
-                  status: "sent",
+                  status: msg.status,
                 });
               } else {
                 this.registry.rejectRequest(
