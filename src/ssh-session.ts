@@ -1,10 +1,47 @@
 import * as pty from "node-pty";
 import { resolve } from "node:path";
-import { existsSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { TerminalManager } from "./terminal.js";
 import type { IAgent } from "./agent/types.js";
 import type { CommandQueue } from "./agent/command-queue.js";
 import type { ModeManager } from "./mode-manager.js";
+
+const WIN32_INPUT_REGEX = /\x1b\[(\d+);(\d+);(\d+);(\d+);(\d+);(\d+)_/g;
+const CSI_U_REGEX = /\x1b\[(\d+)(?:;\d+)?u/;
+
+// Intenta extraer el carácter que el usuario presionó, independiente del
+// protocolo del terminal:
+//   - Windows Terminal con win32-input-mode: ESC[Vk;Sc;Uc;Kd;Cs;Rc_
+//   - Terminales con kitty/CSI u (fixterms):  ESC[<codepoint>[;<mods>]u
+//   - Linux/macOS y Windows sin modos extendidos: el char llega raw
+// Devuelve null si no logra decodificar.
+function decodeTypedChar(str: string): string | null {
+  WIN32_INPUT_REGEX.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = WIN32_INPUT_REGEX.exec(str)) !== null) {
+    const uc = parseInt(match[3], 10);
+    const kd = parseInt(match[4], 10);
+    if (kd === 1 && uc > 0 && uc < 0x110000) {
+      return String.fromCodePoint(uc);
+    }
+  }
+
+  const csiU = str.match(CSI_U_REGEX);
+  if (csiU) {
+    const cp = parseInt(csiU[1], 10);
+    if (cp > 0 && cp < 0x110000) {
+      return String.fromCodePoint(cp);
+    }
+  }
+
+  if (str.length === 1) {
+    return str;
+  }
+
+  return null;
+}
 
 function findSshBinary(): string {
   if (process.platform === "win32") {
@@ -49,34 +86,86 @@ export class SshSession {
         return;
       }
 
+      // Aseguramos que el terminal local NO entre en win32-input-mode
+      // (si lo hace, cada tecla llega encoded como ESC[Vk;Sc;Uc;Kd;Cs;Rc_
+      // y se producen loops de eco feos en teardown).
+      process.stdout.write("\x1b[?9001l");
+
       // PTY output → usuario + agente
       this.ptyProcess.onData((data: string) => {
-        process.stdout.write(data);
+        // Removemos intentos del lado remoto de encender win32-input-mode
+        // o kitty-keyboard-protocol, que rompen el approval flow.
+        const cleaned = data
+          .replace(/\x1b\[\?9001h/g, "")
+          .replace(/\x1b\[>\d+u/g, "");
+        process.stdout.write(cleaned);
         try {
-          this.options.agent.sendOutput(data);
+          this.options.agent.sendOutput(cleaned);
         } catch {
           // No romper el terminal si el agente falla
         }
       });
+
+      // Logging temporal de stdin para diagnosticar aprobación en Windows.
+      const stdinLog = this.options.debug
+        ? (() => {
+            const dir = join(homedir(), ".ssh-copilot");
+            try {
+              if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+            } catch {}
+            const file = join(dir, "stdin-debug.log");
+            appendFileSync(
+              file,
+              `\n---\n${new Date().toISOString()} session start\n`
+            );
+            return (line: string) => {
+              try {
+                appendFileSync(file, `${new Date().toISOString()} ${line}\n`);
+              } catch {}
+            };
+          })()
+        : null;
 
       // Usuario input → PTY
       const onStdinData = (data: Buffer) => {
         if (!this.ptyProcess) return;
         const str = data.toString();
 
-        // Ctrl+O → cambiar modo
-        if (str === "\x0F" && this.options.modeManager) {
+        if (stdinLog) {
+          const hex = Array.from(data)
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join(" ");
+          const pending = this.options.modeManager?.hasPendingApproval()
+            ? "yes"
+            : "no";
+          stdinLog(
+            `stdin bytes=[${hex}] str=${JSON.stringify(str)} pending=${pending}`
+          );
+        }
+
+        // Decodificamos la tecla real (maneja win32-input-mode, CSI u y raw).
+        const decodedKey = decodeTypedChar(str);
+        if (decodedKey !== null && decodedKey !== str) {
+          stdinLog?.(`-> decoded key=${JSON.stringify(decodedKey)}`);
+        }
+        const effectiveKey = decodedKey ?? str;
+
+        if (effectiveKey === "\x0F" && this.options.modeManager) {
+          stdinLog?.("-> ctrl+o, cycling mode");
           this.options.modeManager.cycleMode();
           return;
         }
 
-        // Si hay aprobación pendiente, interceptar y/n
         if (this.options.modeManager?.hasPendingApproval()) {
-          if (this.options.modeManager.handleApprovalInput(str)) {
+          const handled =
+            this.options.modeManager.handleApprovalInput(effectiveKey);
+          stdinLog?.(`-> handleApprovalInput(${JSON.stringify(effectiveKey)}) returned ${handled}`);
+          if (handled) {
             return;
           }
         }
 
+        stdinLog?.("-> forwarded to pty");
         this.ptyProcess.write(str);
 
         // Detectar comandos (cuando el usuario presiona Enter)

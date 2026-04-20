@@ -21,6 +21,9 @@ export class TerminalManager {
 
   restore(): void {
     process.stdout.removeListener("resize", this.resizeHandler);
+    // Desarmamos protocolos de teclado extendidos por si el remoto los dejó
+    // encendidos: win32-input-mode y kitty-keyboard-protocol.
+    process.stdout.write("\x1b[?9001l\x1b[<u");
     if (process.stdin.isTTY) {
       process.stdin.setRawMode(this.wasRaw);
     }
