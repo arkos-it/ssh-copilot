@@ -18,7 +18,7 @@ program
   .option("-i, --identity <file>", "archivo de identidad SSH")
   .option("--debug", "modo debug")
   .option("--agent-debug", "muestra lo que el agente ve")
-  .option("--server-url <url>", "URL del server MCP WebSocket", "ws://localhost:3101")
+  .option("--server-url <url>", "URL del server MCP WebSocket", "ws://127.0.0.1:3101")
   .passThroughOptions()
   .action(connectAction);
 
@@ -26,7 +26,7 @@ program
 program
   .command("server")
   .description("Levanta el MCP server central")
-  .option("--port <port>", "puerto del MCP server HTTP", "3100")
+  .option("--port <port>", "puerto del MCP server HTTP", "3124")
   .option("--ws-port <port>", "puerto del WebSocket server", "3101")
   .option("--debug", "modo debug")
   .action(async (options) => {

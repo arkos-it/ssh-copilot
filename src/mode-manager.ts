@@ -10,6 +10,12 @@ const MODE_LABELS: Record<AgentMode, string> = {
   [AgentMode.READONLY]: "\x1b[31m[READONLY]\x1b[0m",
 };
 
+const MODE_HINTS: Record<AgentMode, string> = {
+  [AgentMode.YOLO]: "agent runs commands directly",
+  [AgentMode.SUGGEST]: "agent asks before running",
+  [AgentMode.READONLY]: "agent can only read",
+};
+
 const MODE_ORDER: AgentMode[] = [
   AgentMode.SUGGEST,
   AgentMode.READONLY,
@@ -34,7 +40,6 @@ export class ModeManager {
   }
 
   cycleMode(): AgentMode {
-    // Rechazar comando pendiente al cambiar de modo
     if (this.pending) {
       this.pending.resolve(false);
       this.clearPrompt();
@@ -49,7 +54,6 @@ export class ModeManager {
   }
 
   requestApproval(command: string): Promise<boolean> {
-    // Si ya hay uno pendiente, rechazar el anterior
     if (this.pending) {
       this.pending.resolve(false);
       this.clearPrompt();
@@ -64,14 +68,15 @@ export class ModeManager {
   handleApprovalInput(key: string): boolean {
     if (!this.pending) return false;
 
-    if (key === "y" || key === "Y") {
+    const trimmed = key.replace(/[\r\n]/g, "").toLowerCase();
+    if (trimmed === "y" || trimmed === "yes") {
       this.clearPrompt();
       this.pending.resolve(true);
       this.pending = null;
       return true;
     }
 
-    if (key === "n" || key === "N") {
+    if (trimmed === "n" || trimmed === "no") {
       this.clearPrompt();
       this.pending.resolve(false);
       this.pending = null;
@@ -90,14 +95,23 @@ export class ModeManager {
     process.stdout.write(`\x1b]0;[${modeTag}] ${this.destination}\x07`);
   }
 
+  showBanner(): void {
+    const label = MODE_LABELS[this.currentMode];
+    const hint = MODE_HINTS[this.currentMode];
+    process.stdout.write(
+      `\r\n${label} ${hint} \x1b[2m— press Ctrl+O to cycle modes\x1b[0m\r\n\r\n`
+    );
+  }
+
   private showModeNotification(): void {
     const label = MODE_LABELS[this.currentMode];
-    process.stdout.write(`\r\n${label} Mode changed\r\n`);
+    const hint = MODE_HINTS[this.currentMode];
+    process.stdout.write(`\r\n${label} ${hint}\r\n`);
   }
 
   private showApprovalPrompt(command: string): void {
     process.stdout.write(
-      `\r\n\x1b[33m[AGENT]\x1b[0m ${command} \x1b[2m— (y)es / (n)o?\x1b[0m `
+      `\r\n\x1b[33m[AGENT]\x1b[0m ${command} \x1b[2m— (y)es / (n)o? · Ctrl+O to cycle mode\x1b[0m `
     );
   }
 

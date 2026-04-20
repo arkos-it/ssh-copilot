@@ -1,4 +1,6 @@
 import { WebSocketServer, type WebSocket } from "ws";
+import type { IncomingMessage } from "node:http";
+import { timingSafeEqual } from "node:crypto";
 import { SessionRegistry } from "./session-registry.js";
 import type { ClientMessage } from "../protocol/messages.js";
 
@@ -6,19 +8,32 @@ export class WsServer {
   private wss: WebSocketServer | null = null;
   private registry: SessionRegistry;
   private port: number;
+  private token: string;
 
-  constructor(port: number, registry: SessionRegistry) {
+  constructor(port: number, registry: SessionRegistry, token: string) {
     this.port = port;
     this.registry = registry;
+    this.token = token;
   }
 
   start(): Promise<void> {
     return new Promise((resolve) => {
-      this.wss = new WebSocketServer({ port: this.port }, () => {
-        resolve();
-      });
+      this.wss = new WebSocketServer(
+        { port: this.port, host: "127.0.0.1" },
+        () => {
+          resolve();
+        }
+      );
 
-      this.wss.on("connection", (ws: WebSocket) => {
+      this.wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
+        if (!this.isAuthorized(req)) {
+          process.stderr.write(
+            `[ssh-copilot] Unauthorized WS connection rejected from ${req.socket.remoteAddress}\n`
+          );
+          ws.close(1008, "unauthorized");
+          return;
+        }
+
         let sessionId: string | null = null;
 
         ws.on("message", (raw: Buffer) => {
@@ -96,6 +111,17 @@ export class WsServer {
         });
       });
     });
+  }
+
+  private isAuthorized(req: IncomingMessage): boolean {
+    const url = new URL(req.url ?? "/", "http://127.0.0.1");
+    const provided = url.searchParams.get("token") ?? "";
+    const expected = this.token;
+
+    const a = Buffer.from(provided);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length) return false;
+    return timingSafeEqual(a, b);
   }
 
   stop(): void {

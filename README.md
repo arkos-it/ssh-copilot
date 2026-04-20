@@ -61,18 +61,30 @@ Your SSH session works exactly as before: colors, vim, nano, top, resize — eve
 
 ### 3. Connect your AI agent
 
-Add this to your `.mcp.json`:
+#### Claude Code
+
+Register it once, globally, and it will be available in every project:
+
+```bash
+claude mcp add --scope user --transport http ssh-copilot http://localhost:3124/mcp
+```
+
+Or, for a single project only, add this to the project's `.mcp.json`:
 
 ```json
 {
   "mcpServers": {
     "ssh-copilot": {
       "type": "http",
-      "url": "http://localhost:3100/mcp"
+      "url": "http://localhost:3124/mcp"
     }
   }
 }
 ```
+
+#### Other MCP-capable agents
+
+Point your agent at `http://localhost:3124/mcp` over HTTP/SSE transport.
 
 Done. Your AI can now **see and act inside your SSH sessions** — exactly as you do.
 
@@ -94,11 +106,12 @@ This means the AI never loses context.
 
 ## 🛠 Agent Capabilities
 
-| Tool            | Description                       |
-| --------------- | --------------------------------- |
-| `list_sessions` | List all active SSH sessions      |
-| `read_terminal` | Read recent terminal output       |
-| `run_command`   | Execute commands inside a session |
+| Tool              | Description                                                                     |
+| ----------------- | ------------------------------------------------------------------------------- |
+| `list_sessions`   | List all active SSH sessions                                                    |
+| `read_terminal`   | Read buffered output with pagination (`lines`, `offset`), deltas (`since_id`) or filtered to the output of the last N commands (`last_commands`) |
+| `search_terminal` | Regex search across the buffered output, with optional context lines            |
+| `run_command`     | Execute commands inside a session (SUGGEST asks, READONLY blocks, YOLO runs)   |
 
 ---
 
@@ -146,7 +159,7 @@ The agent can see and operate across both sessions.
 Starts the bridge between your SSH sessions and AI agents.
 
 ```
---port <port>      MCP HTTP server port (default: 3100)
+--port <port>      MCP HTTP server port (default: 3124)
 --ws-port <port>   WebSocket port (default: 3101)
 --debug            Enable debug mode
 ```
@@ -191,6 +204,24 @@ Your Terminal                      Your AI Agent
 3. The AI agent connects via MCP and can read/write to sessions
 
 ---
+
+## 🔐 Security
+
+SSH Copilot runs entirely on your machine. The server and the SSH clients
+communicate over a local WebSocket with two layers of protection — no manual
+setup needed:
+
+* **Loopback-only binding** — the WebSocket server listens on `127.0.0.1`, so
+  other hosts on your network cannot reach it.
+* **Auto-generated local token** — on first `ssh-copilot server` run, a random
+  token is stored at `~/.ssh-copilot/token` (permissions `0600`, readable only
+  by your user). The `ssh-copilot connect` command reads it automatically.
+
+This means other users on the same machine cannot hijack or observe your
+sessions, and remote machines cannot connect at all.
+
+The MCP HTTP endpoint (default `http://localhost:3124/mcp`) is also bound to
+loopback. Configure your AI agent to point there.
 
 ## 📦 Requirements
 

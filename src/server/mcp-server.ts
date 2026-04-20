@@ -8,7 +8,6 @@ export function createMcpServer(registry: SessionRegistry): McpServer {
     version: "0.1.0",
   });
 
-  // Tool: list_sessions
   mcp.tool(
     "list_sessions",
     "Lista todas las sesiones SSH activas conectadas al server",
@@ -17,47 +16,132 @@ export function createMcpServer(registry: SessionRegistry): McpServer {
       const sessions = registry.list();
       return {
         content: [
-          {
-            type: "text",
-            text: JSON.stringify(sessions, null, 2),
-          },
+          { type: "text", text: JSON.stringify(sessions, null, 2) },
         ],
       };
     }
   );
 
-  // Tool: read_terminal
   mcp.tool(
     "read_terminal",
-    "Lee el output reciente y los últimos comandos de una sesión SSH",
+    "Lee output reciente de una sesión SSH. Soporta paginación (offset, lines), deltas (since_id) y filtrado por comando (last_commands: 1 = desde el último comando del usuario).",
     {
       session_id: z.string().describe("ID de la sesión SSH"),
+      lines: z
+        .number()
+        .int()
+        .min(1)
+        .max(500)
+        .optional()
+        .describe("Cuántas líneas devolver (default 50, max 500)"),
+      offset: z
+        .number()
+        .int()
+        .min(0)
+        .optional()
+        .describe("Saltar N líneas desde el final (default 0)"),
+      since_id: z
+        .number()
+        .int()
+        .min(0)
+        .optional()
+        .describe("Devolver solo líneas con id > since_id (deltas)"),
+      last_commands: z
+        .number()
+        .int()
+        .min(1)
+        .max(50)
+        .optional()
+        .describe(
+          "Filtrar a líneas producidas desde el Nth-to-last comando (1 = último)"
+        ),
     },
-    async ({ session_id }) => {
-      const context = registry.readContext(session_id);
-      if (!context) {
+    async ({ session_id, lines, offset, since_id, last_commands }) => {
+      const entry = registry.get(session_id);
+      if (!entry) {
         return {
           content: [
-            {
-              type: "text",
-              text: `Error: Session '${session_id}' not found`,
-            },
+            { type: "text", text: `Error: Session '${session_id}' not found` },
           ],
           isError: true,
         };
       }
+      const result = entry.contextBuffer.read({
+        lines,
+        offset,
+        since_id,
+        last_commands,
+      });
       return {
         content: [
-          {
-            type: "text",
-            text: JSON.stringify(context, null, 2),
-          },
+          { type: "text", text: JSON.stringify(result, null, 2) },
         ],
       };
     }
   );
 
-  // Tool: run_command
+  mcp.tool(
+    "search_terminal",
+    "Busca un patrón regex en el buffer de output de una sesión SSH. Útil para encontrar errores, IPs, patrones específicos.",
+    {
+      session_id: z.string().describe("ID de la sesión SSH"),
+      pattern: z
+        .string()
+        .max(256)
+        .describe("Regex a buscar (max 256 chars)"),
+      flags: z
+        .string()
+        .max(8)
+        .optional()
+        .describe("Flags del regex (default 'i' = case-insensitive)"),
+      max_matches: z
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .optional()
+        .describe("Máximo de matches a devolver (default 20)"),
+      context_lines: z
+        .number()
+        .int()
+        .min(0)
+        .max(10)
+        .optional()
+        .describe("Líneas de contexto antes/después de cada match (default 0)"),
+    },
+    async ({ session_id, pattern, flags, max_matches, context_lines }) => {
+      const entry = registry.get(session_id);
+      if (!entry) {
+        return {
+          content: [
+            { type: "text", text: `Error: Session '${session_id}' not found` },
+          ],
+          isError: true,
+        };
+      }
+      try {
+        const result = entry.contextBuffer.search({
+          pattern,
+          flags,
+          max_matches,
+          context_lines,
+        });
+        return {
+          content: [
+            { type: "text", text: JSON.stringify(result, null, 2) },
+          ],
+        };
+      } catch (err) {
+        return {
+          content: [
+            { type: "text", text: `Error: ${(err as Error).message}` },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
   mcp.tool(
     "run_command",
     "Ejecuta un comando en una sesión SSH remota",
@@ -83,10 +167,7 @@ export function createMcpServer(registry: SessionRegistry): McpServer {
       } catch (err) {
         return {
           content: [
-            {
-              type: "text",
-              text: `Error: ${(err as Error).message}`,
-            },
+            { type: "text", text: `Error: ${(err as Error).message}` },
           ],
           isError: true,
         };

@@ -8,6 +8,7 @@ import { CommandQueue } from "../agent/command-queue.js";
 import { WsClient } from "../client/ws-client.js";
 import { ModeManager, AgentMode } from "../mode-manager.js";
 import { Logger } from "../utils/logger.js";
+import { readToken } from "../utils/auth.js";
 import type { IAgent } from "../agent/types.js";
 import type { CliOptions } from "../utils/ssh-parser.js";
 
@@ -33,23 +34,28 @@ export async function connectAction(
   const contextBuffer = new ContextBuffer();
   const commandQueue = new CommandQueue();
   const modeManager = new ModeManager(destination);
-  const serverUrl = options.serverUrl || "ws://localhost:3101";
+  const serverUrl = options.serverUrl || "ws://127.0.0.1:3101";
 
   // Intentar conectar al server MCP, fallback a AgentStub
   let agent: IAgent;
   let wsClient: WsClient | null = null;
 
   try {
+    const token = readToken();
     const sessionId = crypto.randomUUID();
-    wsClient = new WsClient(serverUrl, sessionId, destination);
+    wsClient = new WsClient(serverUrl, sessionId, destination, token);
     await wsClient.connect();
 
     agent = new RemoteAgent(contextBuffer, wsClient, logger);
     logger.debug("Conectado al server MCP en", serverUrl);
-  } catch {
+    modeManager.showBanner();
+  } catch (err) {
     agent = new AgentStub(contextBuffer, logger);
     wsClient = null;
-    logger.debug("Server MCP no disponible, modo local");
+    logger.debug(
+      "Server MCP no disponible, modo local:",
+      (err as Error).message
+    );
   }
 
   const session = new SshSession({

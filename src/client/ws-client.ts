@@ -10,19 +10,28 @@ export class WsClient {
   private serverUrl: string;
   private sessionId: string;
   private destination: string;
+  private token: string;
 
   onRunCommand?: (command: string, requestId: string) => void;
   onReadContext?: (requestId: string) => void;
 
-  constructor(serverUrl: string, sessionId: string, destination: string) {
+  constructor(
+    serverUrl: string,
+    sessionId: string,
+    destination: string,
+    token: string
+  ) {
     this.serverUrl = serverUrl;
     this.sessionId = sessionId;
     this.destination = destination;
+    this.token = token;
   }
 
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.ws = new WebSocket(this.serverUrl);
+      const url = new URL(this.serverUrl);
+      url.searchParams.set("token", this.token);
+      this.ws = new WebSocket(url.toString());
 
       const timeout = setTimeout(() => {
         this.ws?.terminate();

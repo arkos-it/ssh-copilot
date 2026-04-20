@@ -5,6 +5,7 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { SessionRegistry } from "../server/session-registry.js";
 import { WsServer } from "../server/ws-server.js";
 import { createMcpServer } from "../server/mcp-server.js";
+import { ensureToken, getTokenPath } from "../utils/auth.js";
 
 export interface ServerOptions {
   port?: string;
@@ -13,13 +14,14 @@ export interface ServerOptions {
 }
 
 export async function serverAction(options: ServerOptions): Promise<void> {
-  const mcpPort = parseInt(options.port || "3100", 10);
+  const mcpPort = parseInt(options.port || "3124", 10);
   const wsPort = parseInt(options.wsPort || "3101", 10);
 
+  const token = ensureToken();
   const registry = new SessionRegistry();
 
   // Iniciar WebSocket server
-  const wsServer = new WsServer(wsPort, registry);
+  const wsServer = new WsServer(wsPort, registry, token);
   await wsServer.start();
 
   // App Express pre-configurada por el SDK (incluye json() y DNS rebinding protection)
@@ -101,6 +103,9 @@ export async function serverAction(options: ServerOptions): Promise<void> {
     );
     process.stderr.write(
       `[ssh-copilot] WebSocket Server listening on ws://localhost:${wsPort}\n`
+    );
+    process.stderr.write(
+      `[ssh-copilot] Auth token stored at ${getTokenPath()}\n`
     );
     process.stderr.write(`[ssh-copilot] Ready for connections.\n`);
   });
