@@ -1,0 +1,57 @@
+{
+  "name": "arkos-ssh",
+  "version": "0.1.0",
+  "description": "SSH copilot - terminal compartida entre humano y agente IA",
+  "type": "module",
+  "bin": {
+    "arkos-ssh": "./dist/cli.js"
+  },
+  "main": "./dist/cli.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "tsx src/cli.ts",
+    "build": "tsup",
+    "start": "node dist/cli.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "ssh",
+    "copilot",
+    "terminal",
+    "pty",
+    "agent",
+    "mcp",
+    "claude",
+    "ai"
+  ],
+  "author": "Cristian Torres — Arkos",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arkos-it/ssh-copilot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/arkos-it/ssh-copilot/issues"
+  },
+  "homepage": "https://github.com/arkos-it/ssh-copilot#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "commander": "^14.0.3",
+    "express": "^5.2.1",
+    "node-pty": "^1.1.0",
+    "ws": "^8.20.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.5.2",
+    "@types/ws": "^8.18.1",
+    "tsup": "^8.5.1",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}

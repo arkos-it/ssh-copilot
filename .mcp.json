@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "arkos-ssh": {
+      "type": "http",
+      "url": "http://localhost:3100/mcp"
+    }
+  }
+}
