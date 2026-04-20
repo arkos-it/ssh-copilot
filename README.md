@@ -1,8 +1,16 @@
 # SSH Copilot
 
+[![npm version](https://img.shields.io/npm/v/ssh-copilot/beta.svg)](https://www.npmjs.com/package/ssh-copilot)
+[![license](https://img.shields.io/npm/l/ssh-copilot.svg)](./LICENSE)
+[![CI](https://github.com/arkos-it/ssh-copilot/actions/workflows/ci.yml/badge.svg)](https://github.com/arkos-it/ssh-copilot/actions/workflows/ci.yml)
+
 Run SSH with an AI copilot that sees everything you do.
 
 Your terminal stays the same — but now your AI can watch, understand, and execute commands alongside you in real time.
+
+> ⚠️ **Beta**: the package is published on npm under the `beta` tag. The API,
+> the MCP tool shapes and the WebSocket protocol can change between beta
+> releases. Pin a version if you need stability.
 
 ---
 
@@ -33,9 +41,19 @@ This is a **shared terminal layer for humans and AI agents**.
 
 ## 🚀 Quick Start
 
+Install the CLI globally from npm:
+
 ```bash
-npm install -g ssh-copilot
+npm install -g ssh-copilot          # current beta (alias: @beta)
 ```
+
+Or run it once without installing:
+
+```bash
+npx ssh-copilot connect user@host
+```
+
+Requires Node.js ≥ 18.
 
 ### 1. Start the server
 
