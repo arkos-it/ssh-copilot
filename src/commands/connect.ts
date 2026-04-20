@@ -27,7 +27,7 @@ export async function connectAction(
   const isDebug = options.debug || options.agentDebug || false;
   const logger = new Logger({
     debug: isDebug,
-    logFile: isDebug ? "arkos-ssh.log" : undefined,
+    logFile: isDebug ? "ssh-copilot.log" : undefined,
   });
 
   const contextBuffer = new ContextBuffer();

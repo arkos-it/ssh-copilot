@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "arkos-ssh": {
+    "ssh-copilot": {
       "type": "http",
       "url": "http://localhost:3100/mcp"
     }

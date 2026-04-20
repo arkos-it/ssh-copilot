@@ -1,4 +1,4 @@
-# Arkos SSH Copilot
+# SSH Copilot
 
 Run SSH with an AI copilot that sees everything you do.
 
@@ -8,7 +8,7 @@ Your terminal stays the same — but now your AI can watch, understand, and exec
 
 ## ⚡ Why this is different
 
-Arkos SSH Copilot is designed to work *with* AI coding agents — not replace them.
+SSH Copilot is designed to work *with* AI coding agents — not replace them.
 
 Compatible with tools like:
 
@@ -18,7 +18,7 @@ Compatible with tools like:
 * Codeium
 * OpenAI Codex-style agents
 
-Unlike GUI-based tools, Arkos SSH Copilot:
+Unlike GUI-based tools, SSH Copilot:
 
 * Uses your existing terminal (no new UI)
 * Works directly with real SSH sessions
@@ -34,25 +34,25 @@ This is a **shared terminal layer for humans and AI agents**.
 ## 🚀 Quick Start
 
 ```bash
-npm install -g arkos-ssh
+npm install -g ssh-copilot
 ```
 
 ### 1. Start the server
 
 ```bash
-arkos-ssh server
+ssh-copilot server
 ```
 
 ### 2. Connect to your server
 
 ```bash
-arkos-ssh connect user@host
+ssh-copilot connect user@host
 
 # With private key
-arkos-ssh connect -i ~/.ssh/key.pem user@host
+ssh-copilot connect -i ~/.ssh/key.pem user@host
 
 # Custom port
-arkos-ssh connect -p 2222 user@host
+ssh-copilot connect -p 2222 user@host
 ```
 
 Your SSH session works exactly as before: colors, vim, nano, top, resize — everything.
@@ -66,7 +66,7 @@ Add this to your `.mcp.json`:
 ```json
 {
   "mcpServers": {
-    "arkos-ssh": {
+    "ssh-copilot": {
       "type": "http",
       "url": "http://localhost:3100/mcp"
     }
@@ -82,7 +82,7 @@ Done. Your AI can now **see and act inside your SSH sessions** — exactly as yo
 
 Most AI tools only see the commands they execute.
 
-Arkos SSH Copilot sees **everything**:
+SSH Copilot sees **everything**:
 
 * Commands you type
 * Output from the terminal
@@ -129,10 +129,10 @@ Agent executes required commands while you watch everything in real time.
 
 ```bash
 # Terminal 1
-arkos-ssh connect -i key.pem ubuntu@server-1
+ssh-copilot connect -i key.pem ubuntu@server-1
 
 # Terminal 2
-arkos-ssh connect -i key.pem ubuntu@server-2
+ssh-copilot connect -i key.pem ubuntu@server-2
 ```
 
 The agent can see and operate across both sessions.
@@ -141,7 +141,7 @@ The agent can see and operate across both sessions.
 
 ## ⚙️ Commands
 
-### `arkos-ssh server`
+### `ssh-copilot server`
 
 Starts the bridge between your SSH sessions and AI agents.
 
@@ -153,7 +153,7 @@ Starts the bridge between your SSH sessions and AI agents.
 
 ---
 
-### `arkos-ssh connect`
+### `ssh-copilot connect`
 
 Opens an SSH session and registers it with the server.
 
@@ -171,23 +171,23 @@ If the server is not running, `connect` still works — just without AI integrat
 ## 🔍 How it works
 
 ```
-Your Terminal                    Your AI Agent
-┌─────────────────────┐         ┌─────────────────────┐
-│ arkos-ssh connect    │         │ Claude Code         │
-│ ubuntu@my-server     │         │                     │
-│                      │         │ "check logs"        │
-│ $ docker ps          │◄──────► │ run_command(...)    │
-│ CONTAINER ID IMAGE   │  shared │ read_terminal()     │
-│ abc123 nginx:latest  │ terminal│ "nginx is down"     │
-│ $                    │ context │                     │
-└──────────┬───────────┘         └──────────┬──────────┘
-           │                                │
-           └──────────► Server ◄────────────┘
-                    (MCP + WebSocket)
+Your Terminal                      Your AI Agent
+┌───────────────────────┐         ┌─────────────────────┐
+│ ssh-copilot connect   │         │ Claude Code         │
+│ ubuntu@my-server      │         │                     │
+│                       │         │ "check logs"        │
+│ $ docker ps           │◄──────► │ run_command(...)    │
+│ CONTAINER ID IMAGE    │  shared │ read_terminal()     │
+│ abc123 nginx:latest   │ terminal│ "nginx is down"     │
+│ $                     │ context │                     │
+└──────────┬────────────┘         └──────────┬──────────┘
+           │                                 │
+           └──────────► Server ◄─────────────┘
+                     (MCP + WebSocket)
 ```
 
-1. `arkos-ssh server` runs locally
-2. `arkos-ssh connect` opens real SSH sessions using a PTY
+1. `ssh-copilot server` runs locally
+2. `ssh-copilot connect` opens real SSH sessions using a PTY
 3. The AI agent connects via MCP and can read/write to sessions
 
 ---

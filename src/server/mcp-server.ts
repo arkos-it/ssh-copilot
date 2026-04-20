@@ -4,7 +4,7 @@ import type { SessionRegistry } from "./session-registry.js";
 
 export function createMcpServer(registry: SessionRegistry): McpServer {
   const mcp = new McpServer({
-    name: "arkos-ssh",
+    name: "ssh-copilot",
     version: "0.1.0",
   });
 

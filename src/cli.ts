@@ -4,7 +4,7 @@ import { connectAction } from "./commands/connect.js";
 const program = new Command();
 
 program
-  .name("arkos-ssh")
+  .name("ssh-copilot")
   .description("SSH copilot - terminal compartida entre humano y agente IA")
   .version("0.1.0")
   .enablePositionalOptions();

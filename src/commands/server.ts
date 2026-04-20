@@ -97,17 +97,17 @@ export async function serverAction(options: ServerOptions): Promise<void> {
 
   app.listen(mcpPort, () => {
     process.stderr.write(
-      `[arkos] MCP Server listening on http://localhost:${mcpPort}/mcp\n`
+      `[ssh-copilot] MCP Server listening on http://localhost:${mcpPort}/mcp\n`
     );
     process.stderr.write(
-      `[arkos] WebSocket Server listening on ws://localhost:${wsPort}\n`
+      `[ssh-copilot] WebSocket Server listening on ws://localhost:${wsPort}\n`
     );
-    process.stderr.write(`[arkos] Ready for connections.\n`);
+    process.stderr.write(`[ssh-copilot] Ready for connections.\n`);
   });
 
   // Shutdown limpio
   const shutdown = async () => {
-    process.stderr.write("\n[arkos] Shutting down...\n");
+    process.stderr.write("\n[ssh-copilot] Shutting down...\n");
     wsServer.stop();
     for (const sid of Object.keys(transports)) {
       await transports[sid].close();

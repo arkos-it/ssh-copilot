@@ -34,7 +34,7 @@ export class WsServer {
               sessionId = msg.sessionId;
               this.registry.register(msg.sessionId, msg.destination, ws);
               process.stderr.write(
-                `[arkos] Session registered: ${msg.sessionId} (${msg.destination})\n`
+                `[ssh-copilot] Session registered: ${msg.sessionId} (${msg.destination})\n`
               );
               break;
 
@@ -79,7 +79,7 @@ export class WsServer {
               if (msg.sessionId) {
                 this.registry.unregister(msg.sessionId);
                 process.stderr.write(
-                  `[arkos] Session disconnected: ${msg.sessionId}\n`
+                  `[ssh-copilot] Session disconnected: ${msg.sessionId}\n`
                 );
               }
               break;
@@ -90,7 +90,7 @@ export class WsServer {
           if (sessionId) {
             this.registry.unregister(sessionId);
             process.stderr.write(
-              `[arkos] Session lost: ${sessionId}\n`
+              `[ssh-copilot] Session lost: ${sessionId}\n`
             );
           }
         });

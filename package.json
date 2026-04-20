@@ -1,10 +1,10 @@
 {
-  "name": "arkos-ssh",
+  "name": "ssh-copilot",
   "version": "0.1.0",
   "description": "SSH copilot - terminal compartida entre humano y agente IA",
   "type": "module",
   "bin": {
-    "arkos-ssh": "./dist/cli.js"
+    "ssh-copilot": "./dist/cli.js"
   },
   "main": "./dist/cli.js",
   "files": [
